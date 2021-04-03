@@ -130,8 +130,8 @@
     function toggleAbout() {
         //about表示／非表示の切り替え
         let about = document.getElementById("about");
-        about.setAttribute("value", about.value == "on" ? "off": "on");
-        document.getElementById("license").style.display = about.value == "on" ? "block": "none";
+        about.setAttribute("value", about.value === "on" ? "off": "on");
+        document.getElementById("license").style.display = about.value === "on" ? "block": "none";
     }
     function autoHideAbout() {
         //about表示は15秒ほどで自動的に消えるようにする
@@ -147,7 +147,7 @@
 
     function changeSize() {
         //メニューで選択されたフォントサイズを設定
-        var select = document.getElementById("selectSize");
+        let select = document.getElementById("selectSize");
         //console.log(`chageSize: ${select.value}`);
         document.getElementById("face").style.fontSize = select.value;
         isAdjusted = false;
@@ -165,7 +165,7 @@
         let face = document.getElementById("face");
         if (box.clientHeight >= face.clientHeight) {
             face.style.top = ((box.clientHeight - face.clientHeight) / 2) + "px";
-        }else if (adjuster == null) {
+        }else if (adjuster === null) {
             //文字盤がウィンドウに収まらない時、フォントを縮める
             //時間がかかる（かもしれない）ので非同期処理
             adjuster = new Promise((resolve,reject) => {
@@ -197,12 +197,12 @@
     function initialize() {
         //スタイル指定に使うグローバル変数の初期化
         for (let rules of document.styleSheets[0].cssRules) {
-            if (rules.selectorText == "body" &&
+            if (rules.selectorText === "body" &&
                 rules.style.margin != "") {
                 //resizeBoxで使うマージン → body要素のマージン*2
                 marginOfBody = Number.parseInt(rules.style.margin, 10) * 2;
             }
-            if (rules.selectorText == "#face" &&
+            if (rules.selectorText === "#face" &&
                 rules.style.fontSize != "") {
                 //文字盤のデフォルトフォントサイズ
                 defFontSize = rules.style.fontSize;
