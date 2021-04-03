@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>ZACKLY Clock</title>
+<!--
+    ざっくり時計 V1.0 -- ざっくりとした現在時刻を表示する
+    inspired by 所ジョージさんのDAITAI時計
+-->
+<script type="text/javascript">
+    var lastFoundStr = "";
+    var lastFoundTime = -1;
+    function getZacklyStr(dateTime) {
+        //Dateオブジェクトを渡して、文字盤に表示させる文字列の作成をする
+        //毎分呼ばれるけど、前回と同じ内容で書き換え必要なしならnullを返す
+        const mapForZackly = new Map([
+            //「分」の数字（未満）と表示文字列の対応表
+            // %dはその時点の「時」、%eは次の「時」に置換される
+            [ 1, "%d丁度"],     //0分台は「丁度」
+            [ 5, "%dごろ"],     //1分台〜5分未満は「ごろ」...以下同様
+            [15, "%d過ぎ"],
+            [25, "%d半前"],
+            [29, "%d半近く"],
+            [31, "%d半"],
+            [35, "%d半ごろ"],
+            [45, "%d半過ぎ"],
+            [55, "%e前"],
+            [59, "%e近く"],
+            [60, "%e丁度"]
+        ]);
+        const mapForSpecialPeriod = new Map([
+            //スペシャル・ピリオド「特別な時間帯」と表示文字列の対応表
+            //Mapのkey 1個目の数字は曜日（0=日曜〜6=土曜）
+            //2個目、3個目は表示される時刻の下限と上限（24時間制）
+            [["0123456","12:00","12:15"], "お昼ご飯の時間だよ〜"],
+            [["12345","09:50","09:59"], "まもなく%e、休憩時間になります"],
+            [["12345","14:50","14:59"], "まもなく%e、おやつの時間で〜す"],
+            [["0","17:55","17:59"], "もうすぐ日曜%e、ちびまる子ちゃん始まるよ〜！"]
+        ]);
+
+        const h23format = new Intl.DateTimeFormat('ja-JP', { hour12:false, hour:'numeric' });
+        const h11format = new Intl.DateTimeFormat('ja-JP', { hour12:true, hour:'numeric' });
+        const hhmmformat = new Intl.DateTimeFormat('en-US', { hour12:false, hour:'2-digit', minute:'2-digit' });
+                // Firefoxでは、ja-JPロケールで、hour:'2-digit'が効かないのでしかたなくen-US
+
+        //console.log("getZacklyStr: " + dateTime.toString());
+        let strFound = "";
+        let mins = dateTime.getMinutes();
+        let timeMilli = dateTime.getTime();
+        let dayOfWeek = dateTime.getDay();
+        let hhmm = hhmmformat.format(dateTime);
+        //console.log(`getZacklyStr: dayOfWeek=${dayOfWeek} hhmm=${hhmm}`);
+        //console.log(`getZacklyStr: options=${JSON.stringify(hhmmformat.resolvedOptions())}`);
+        if (modeSpecial) for (let [spec, val] of mapForSpecialPeriod) {
+            if (spec.shift().includes(dayOfWeek) &&
+                spec.shift() <= hhmm &&
+                spec.shift() >= hhmm) {
+                    if (lastFoundStr === val) return null;
+                    strFound = val;
+                    lastFoundStr = val;
+                    lastFoundTime = timeMilli;
+                    break;
+            }
+        }
+        if (strFound === "") for (let [key, val] of mapForZackly) {
+            if (mins < key) {
+                if (lastFoundStr === val &&
+                    (timeMilli - lastFoundTime) < 3600*1000) return null;
+                strFound = val;
+                lastFoundStr = val;
+                lastFoundTime = timeMilli;
+                break;
+            }
+        }
+        if (strFound.includes("%d")) {
+            return strFound.replace("%d", (mode12H ? h11format:h23format).format(dateTime));
+        }else if (strFound.includes("%e")) {
+            dateTime.setHours(dateTime.getHours() + 1);
+            return strFound.replace("%e", (mode12H ? h11format:h23format).format(dateTime));
+        }
+        return strFound;
+    }
+
+    function updateFace() {
+        //文字盤の表示内容更新
+        let zacklyStr = getZacklyStr(new Date());
+        if (zacklyStr != null) {
+            //console.log(`updateFace: ${zacklyStr}`);
+            let face = document.getElementById("face");
+            while (face.hasChildNodes()) face.removeChild(face.firstChild);
+            face.append(zacklyStr);
+            //フォントを縮める調整をしてあったら、再度選択されたサイズに戻してresizeBoxへ
+            if (isAdjusted) changeSize();
+            else resizeBox();
+        }
+    }
+
+    function updateByTimer() {
+        //1分ごとのタイマーで文字盤書き換え
+        updateFace();
+        setTimeout(updateByTimer, (60 - new Date().getSeconds()) * 1000);
+    }
+
+    var mode12H = false;
+    function toggle12H() {
+        //12時間制／24時間制の切り替え
+        mode12H = !mode12H;
+        //console.log(`toggle12H: ${mode12H}`);
+        document.getElementById("mode12H").setAttribute("value", mode12H ? "on": "off");
+        lastFoundStr = "";
+        updateFace();
+    }
+
+    var modeDark = false;
+    function toggleDark() {
+        //ダークモード／ライトモードの切り替え
+        modeDark = !modeDark;
+        //console.log(`toggleDark: ${modeDark}`);
+        document.getElementById("modeDark").setAttribute("value", modeDark ? "on": "off");
+        document.getElementById("outer-box").setAttribute("class", modeDark ? "darkMode": "lightMode");
+    }
+
+    var modeSpecial = false;
+    function toggleSpecial() {
+        //「特別な時間帯」表示／非表示の切り替え
+        modeSpecial = !modeSpecial;
+        //console.log(`toggleSpecial: ${modeSpecial}`);
+        document.getElementById("modeSpecial").setAttribute("value", modeSpecial ? "on": "off");
+        updateFace();
+    }
+
+    function toggleAbout() {
+        //about表示／非表示の切り替え
+        let about = document.getElementById("about");
+        about.setAttribute("value", about.value == "on" ? "off": "on");
+        document.getElementById("license").style.display = about.value == "on" ? "block": "none";
+    }
+    function autoHideAbout() {
+        //about表示は15秒ほどで自動的に消えるようにする
+        let about = document.getElementById("about");
+        if (about.value === "on") {
+            //console.log("autoHideAbout: start timer")
+            setTimeout(() => {
+                //console.log("autoHideAbout: called by timer")
+                if (about.value === "on") toggleAbout();
+            }, 15*1000);
+        }
+    }
+
+    function changeSize() {
+        //メニューで選択されたフォントサイズを設定
+        var select = document.getElementById("selectSize");
+        //console.log(`chageSize: ${select.value}`);
+        document.getElementById("face").style.fontSize = select.value;
+        isAdjusted = false;
+        resizeBox();
+    }
+
+    var adjuster = null;
+    var isAdjusted = false;
+    function resizeBox() {
+        //ウィンドウのサイズに応じて文字盤の位置調整とフォントサイズ調整をする
+        let box = document.getElementById("outer-box");
+        box.style.width = (window.innerWidth - marginOfBody) + "px";
+        box.style.height = (window.innerHeight - marginOfBody) + "px";
+        //console.log(`resizeBox: ${box.style.width}, ${box.style.height}`);
+        let face = document.getElementById("face");
+        if (box.clientHeight >= face.clientHeight) {
+            face.style.top = ((box.clientHeight - face.clientHeight) / 2) + "px";
+        }else if (adjuster == null) {
+            //文字盤がウィンドウに収まらない時、フォントを縮める
+            //時間がかかる（かもしれない）ので非同期処理
+            adjuster = new Promise((resolve,reject) => {
+                while (box.clientHeight < face.clientHeight) {
+                    let curSize = face.style.fontSize || defFontSize;
+                    let newSize = Number.parseInt(curSize, 10) - 10;
+                    if (newSize < 20) {
+                        reject(window.innerHeight);
+                        return;
+                    }
+                    //console.log(`adjuster: ${curSize} -> ${newSize}`);
+                    face.style.fontSize = newSize + "px";
+                    isAdjusted = true;
+                }
+                resolve();
+            })
+            .catch((height) => {
+                //console.log(`adjuster: failed -- window height: ${height}`);
+            })
+            .finally(() => {
+                face.style.top = ((box.clientHeight - face.clientHeight) / 2) + "px";
+                adjuster = null;
+            });
+        }
+    }
+
+    var marginOfBody = 16;
+    var defFontSize = 80;
+    function initialize() {
+        //スタイル指定に使うグローバル変数の初期化
+        for (let rules of document.styleSheets[0].cssRules) {
+            if (rules.selectorText == "body" &&
+                rules.style.margin != "") {
+                //resizeBoxで使うマージン → body要素のマージン*2
+                marginOfBody = Number.parseInt(rules.style.margin, 10) * 2;
+            }
+            if (rules.selectorText == "#face" &&
+                rules.style.fontSize != "") {
+                //文字盤のデフォルトフォントサイズ
+                defFontSize = rules.style.fontSize;
+            }
+        }
+        //console.log(`marginOfBody: ${marginOfBody}, defFontSize: ${defFontSize}`);
+        updateByTimer();
+    }
+    window.onload = initialize;
+    window.onresize = resizeBox;
+</script>
+<style type="text/css">
+div.lightMode {
+  color: midnightblue;
+  background-color:  mintcream;
+}
+div.darkMode {
+  color:  mintcream;
+  background-color: midnightblue;
+}
+
+#face {
+  position: relative;
+  font-family: "しっぽり明朝B1","ＭＳ Ｐ明朝","Times New Roman",serif;
+  font-weight: bold;
+  text-shadow: 5px 3px 4px gray;
+  font-size: 80px;
+  line-height: 1.1;
+  padding: 0px 10px;
+  text-align: center;
+}
+
+#control {
+    border: 1px gray solid;
+    background-color:  lightgrey;
+    border-radius: 6px;
+    padding: 10px;
+    width: 65px;
+    height: 20px;
+    overflow: hidden;
+    position: absolute;
+    left: 20px;
+    bottom: -33px;
+    transition: bottom .5s .2s;
+}
+#control:hover {
+    width: 280px;
+    bottom: 0px;
+    background-color:  mintcream;
+}
+button, select {
+    position: absolute;
+    margin: 0px;
+}
+button[value='on'] {
+    background-color: plum;
+    border-style: inset;
+}
+button[value='off'] {
+    border-style: outset;
+}
+#control:hover #mode12H {
+    left: 16px;
+}
+#control:hover #modeDark {
+    left: 62px;
+}
+#control:hover #modeSpecial {
+    left: 112px;
+}
+#control:hover #selectSize {
+    left: 160px;
+}
+#control:hover #about {
+    left: 260px;
+}
+#license {
+    display: none;
+    position: absolute;
+    padding: 10px;
+    top: 0px;
+    left: 0px;
+    right: 0px;
+    background-color: lightgray;
+    font-size: 12px;
+    opacity: 0.7;
+}
+#license img {
+    float: left;
+}
+body {
+  background-color: lightgray;
+  margin: 8px;
+  overflow: hidden;
+}
+html {
+  box-sizing: border-box;
+}
+</style></head>
+<body>
+    <div id="outer-box" class="lightMode"><div id="face"></div></div>
+    <div id="control" onmouseleave="autoHideAbout()">
+        <button id="mode12H" value="off" onclick="toggle12H()" title="12時間制／24時間制を切り替えます">12H</button>
+        <button id="modeDark" value="off" onclick="toggleDark()" title="ダークモード／ライトモードを切り替えます">Dark</button>
+        <button id="modeSpecial" value="off" onclick="toggleSpecial()" title="スペシャル・ピリオドの表示On／Offを切り替えます">S.P.</button>
+        <button id="about" value="off" onclick="toggleAbout()" title="About ZACKLY Clock">i</button>
+        <select id="selectSize" onchange="changeSize()" title="最大のフォントサイズを指定します">
+            <option value="20px">20px</option>
+            <option value="40px">40px</option>
+            <option value="60px">60px</option>
+            <option value="80px" selected>80px</option>
+            <option value="100px">100px</option>
+            <option value="120px">120px</option>
+            <option value="150px">150px</option>
+        </select>
+    </div>
+    <div id="license"><a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="クリエイティブ・コモンズ・ライセンス" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" width="88" height="31" loading="lazy"/> </a><span xmlns:cc="http://creativecommons.org/ns#" property="cc:attributionName">sigmoc</span> 作『<span xmlns:dct="http://purl.org/dc/terms/" href="http://purl.org/dc/dcmitype/InteractiveResource" property="dct:title" rel="dct:type">ZACKLY Clock V1.0</span>』は <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">クリエイティブ・コモンズ 表示 - 継承 4.0 国際 ライセンス</a> で提供されています。</div>
+</body>
+</html>
