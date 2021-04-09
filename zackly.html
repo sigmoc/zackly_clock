@@ -157,15 +157,14 @@
     var adjuster = null;
     var isAdjusted = false;
     function resizeBox() {
-        //ウィンドウのサイズに応じて文字盤の位置調整とフォントサイズ調整をする
+        //ウィンドウのサイズに応じて文字盤のフォントサイズ調整をする
         let box = document.getElementById("outer-box");
         box.style.width = (window.innerWidth - marginOfBody) + "px";
         box.style.height = (window.innerHeight - marginOfBody) + "px";
         //console.log(`resizeBox: ${box.style.width}, ${box.style.height}`);
         let face = document.getElementById("face");
-        if (box.clientHeight >= face.clientHeight) {
-            face.style.top = ((box.clientHeight - face.clientHeight) / 2) + "px";
-        }else if (adjuster === null) {
+        if (box.clientHeight < face.clientHeight &&
+            adjuster === null) {
             //文字盤がウィンドウに収まらない時、フォントを縮める
             //時間がかかる（かもしれない）ので非同期処理
             adjuster = new Promise((resolve,reject) => {
@@ -186,7 +185,6 @@
                 //console.log(`adjuster: failed -- window height: ${height}`);
             })
             .finally(() => {
-                face.style.top = ((box.clientHeight - face.clientHeight) / 2) + "px";
                 adjuster = null;
             });
         }
@@ -226,12 +224,14 @@ div.darkMode {
 
 #face {
   position: relative;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 0px 10px;
   font-family: "しっぽり明朝B1","ＭＳ Ｐ明朝","Times New Roman",serif;
   font-weight: bold;
   text-shadow: 5px 3px 4px gray;
   font-size: 80px;
   line-height: 1.1;
-  padding: 0px 10px;
   text-align: center;
 }
 
