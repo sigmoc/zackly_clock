@@ -12,7 +12,7 @@ zackly = document.createElement("iframe");
 zackly.setAttribute("id", "zackly_clock");
 zackly.setAttribute("width", "300");
 zackly.setAttribute("height", "150");
-zackly.setAttribute("src", "http://localhost/~shige/zackly.html?12h=1&dark=1&SP=1&size=60");
+zackly.setAttribute("src", "http://localhost/~sigmoc/zackly.html?12h=1&dark=1&SP=1&size=60");
 zackly.setAttribute("style", "position:fixed; right:0; bottom:0; padding:4px; background-color:gray; z-index: 1000; opacity: 0.7;");
 document.body.insertAdjacentElement("beforeend", zackly);
 
