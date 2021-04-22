@@ -7,7 +7,7 @@
 // @exclude file:///*
 // ==/UserScript==
 
-console.log("show zackly clock running.");
+//console.log("show zackly clock running.");
 
 var zackly = document.getElementById("zackly_clock");
 if (zackly) return;
@@ -22,7 +22,7 @@ zackly.setAttribute("style", `position:fixed; ${l_or_r? 'left': 'right'}:0px; bo
 document.body.insertAdjacentElement("beforeend", zackly);
 
 zackly.onclick = function (){
-  console.log("zackly onclick.");
+  //console.log("zackly onclick.");
   l_or_r = !l_or_r;
   if (l_or_r) {
     zackly.style.left = "0px";
@@ -35,7 +35,7 @@ zackly.onclick = function (){
   }
 };
 zackly.oncontextmenu = function (e){
-  console.log("zackly oncontextmenu.");
+  //console.log("zackly oncontextmenu.");
   e.preventDefault();
   document.body.removeChild(zackly);
   zackly = null;
