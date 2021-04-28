@@ -11,6 +11,10 @@
 
 var zackly = document.getElementById("zackly_clock");
 if (zackly) return;
+if (window.frameElement) {
+  //console.log("window.frameElement detected.");
+  return;
+}
 var l_or_r = localStorage.getItem("zackly_l_or_r");
 
 zackly = document.createElement("iframe");
