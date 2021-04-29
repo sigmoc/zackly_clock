@@ -11,8 +11,8 @@
 
 var zackly = document.getElementById("zackly_clock");
 if (zackly) return;
-if (window.frameElement) {
-  //console.log("window.frameElement detected.");
+if (window.parent !== window) {
+  //console.log("window.parent !== window.");
   return;
 }
 var l_or_r = localStorage.getItem("zackly_l_or_r");
