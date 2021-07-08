@@ -2,7 +2,7 @@
 <html>
 <head><meta charset="utf-8"><title>ZACKLY Clock</title>
 <!--
-    ざっくり時計 V1.1 -- ざっくりとした現在時刻を表示する
+    ざっくり時計 V1.2 -- ざっくりとした現在時刻を表示する
     inspired by 所ジョージさんのDAITAI時計
 -->
 <script type="text/javascript">
@@ -115,7 +115,22 @@
         modeDark = !modeDark;
         //console.log(`toggleDark: ${modeDark}`);
         document.getElementById("modeDark").setAttribute("value", modeDark ? "on": "off");
-        document.getElementById("outer-box").setAttribute("class", modeDark ? "darkMode": "lightMode");
+        let box = document.getElementById("outer-box");
+        box.setAttribute("class", modeDark ? "darkMode": "lightMode");
+        if (modeBG) box.style.backgroundImage = getBGurl();
+    }
+
+    var modeBG = false;
+    function toggleBG() {
+        //背景画像あり／なしの切り替え
+        modeBG = !modeBG;
+        //console.log(`toggleBG: ${modeBG}`);
+        document.getElementById("modeBG").setAttribute("value", modeBG ? "on": "off");
+        document.getElementById("outer-box").style.backgroundImage = modeBG ? getBGurl(): "";
+    }
+    function getBGurl() {
+        //現在のモードに応じた背景画像URLを返す
+        return modeDark ? "url('zackly_dark_bg.jpg')": "url('zackly_light_bg.jpg')";
     }
 
     var modeSpecial = false;
@@ -213,7 +228,7 @@
 
     async function parseOptions() {
         //URLのパラメータから初期状態を設定可能とする
-        // ? 12h=(1|0) & dark=(1|0) & SP=(1|0) & size=20...150
+        // ? 12h=(1|0) & dark=(1|0) & BG=(1|0) & SP=(1|0) & size=20...150
         //同じパラメータを複数個書いたら後勝ち。sizeはselectの選択肢にある数字のみ有効
         const paramPattern = /(\w+)=(\w+)/g;
         let matched;
@@ -228,6 +243,10 @@
             case 'dark':
                 if (matched[2] === '1') optSet.add(toggleDark);
                 else if (matched[2] === '0') optSet.delete(toggleDark);
+                break;
+            case 'BG':
+                if (matched[2] === '1') optSet.add(toggleBG);
+                else if (matched[2] === '0') optSet.delete(toggleBG);
                 break;
             case 'SP':
                 if (matched[2] === '1') optSet.add(toggleSpecial);
@@ -257,14 +276,6 @@
     window.onresize = resizeBox;
 </script>
 <style type="text/css">
-div.lightMode {
-  color: midnightblue;
-  background-color:  mintcream;
-}
-div.darkMode {
-  color:  mintcream;
-  background-color: midnightblue;
-}
 
 #face {
   position: relative;
@@ -277,6 +288,18 @@ div.darkMode {
   font-size: 80px;
   line-height: 1.1;
   text-align: center;
+}
+#outer-box.lightMode {
+  color: midnightblue;
+  background-color:  mintcream;
+  background-image: none;
+  background-size: 100% 100%;
+}
+#outer-box.darkMode {
+  color:  mintcream;
+  background-color: midnightblue;
+  background-image: none;
+  background-size: 100% 100%;
 }
 
 #control {
@@ -293,7 +316,7 @@ div.darkMode {
     transition: bottom .5s .2s;
 }
 #control:hover {
-    width: 280px;
+    width: 312px;
     bottom: 0px;
     background-color:  mintcream;
 }
@@ -314,14 +337,17 @@ button[value='off'] {
 #control:hover #modeDark {
     left: 62px;
 }
-#control:hover #modeSpecial {
+#control:hover #modeBG {
     left: 112px;
 }
-#control:hover #selectSize {
+#control:hover #modeSpecial {
     left: 160px;
 }
+#control:hover #selectSize {
+    left: 208px;
+}
 #control:hover #about {
-    left: 260px;
+    left: 296px;
 }
 #license {
     display: none;
@@ -351,6 +377,7 @@ html {
     <div id="control" onmouseleave="autoHideAbout()">
         <button id="mode12H" value="off" onclick="toggle12H()" title="12時間制／24時間制を切り替えます">12H</button>
         <button id="modeDark" value="off" onclick="toggleDark()" title="ダークモード／ライトモードを切り替えます">Dark</button>
+        <button id="modeBG" value="off" onclick="toggleBG()" title="背景画像あり／なしを切り替えます">B.G.</button>
         <button id="modeSpecial" value="off" onclick="toggleSpecial()" title="スペシャル・ピリオドの表示On／Offを切り替えます">S.P.</button>
         <button id="about" value="off" onclick="toggleAbout()" title="About ZACKLY Clock">i</button>
         <select id="selectSize" onchange="changeSize()" title="最大のフォントサイズを指定します">
@@ -363,6 +390,6 @@ html {
             <option value="150px">150px</option>
         </select>
     </div>
-    <div id="license"><a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="クリエイティブ・コモンズ・ライセンス" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" width="88" height="31" loading="lazy"/> </a><span xmlns:cc="http://creativecommons.org/ns#" property="cc:attributionName">sigmoc</span> 作『<span xmlns:dct="http://purl.org/dc/terms/" href="http://purl.org/dc/dcmitype/InteractiveResource" property="dct:title" rel="dct:type">ZACKLY Clock V1.1</span>』は <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">クリエイティブ・コモンズ 表示 - 継承 4.0 国際 ライセンス</a> で提供されています。</div>
+    <div id="license"><a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="クリエイティブ・コモンズ・ライセンス" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" width="88" height="31" loading="lazy"/> </a><span xmlns:cc="http://creativecommons.org/ns#" property="cc:attributionName">sigmoc</span> 作『<span xmlns:dct="http://purl.org/dc/terms/" href="http://purl.org/dc/dcmitype/InteractiveResource" property="dct:title" rel="dct:type">ZACKLY Clock V1.2</span>』は <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">クリエイティブ・コモンズ 表示 - 継承 4.0 国際 ライセンス</a> で提供されています。</div>
 </body>
 </html>
